@@ -4,6 +4,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.text.Text;
 
 public class HudRenderer {
 
@@ -25,9 +26,35 @@ public class HudRenderer {
         int screenHeight = client.getWindow().getScaledHeight();
 
 
-        // Background
-        int backgroundWidth = 50;
-        int backgroundHeight = 50;
+        // non-transparent Background
+        int backgroundWidth = getX(400 / 2);
+        int backgroundHeight = getY(550);
+
+        int backgroundX = getX(5);
+        int backgroundY = getY(10);
+
+        drawContext.fillGradient(backgroundX, backgroundY, backgroundX + backgroundWidth, backgroundY + backgroundHeight, 0x80000000, 0x80000000);
+
+        // Calculate the width of the title text
+        String titleText = "BKM";
+        int titleTextWidth = textRenderer.getWidth(titleText);
+
+        // Calculate the centered X position for the title text
+        int titleX = backgroundX + (backgroundWidth - titleTextWidth) / 2;
+        int titleY = getY(15);
+
+        drawContext.drawText(textRenderer, Text.literal(titleText), titleX, titleY, 0xFFFFFF, true);
+
+        // PVP Section
+
+
+
+
+
+
+
+
+
 
         return;
     }
@@ -58,4 +85,6 @@ public class HudRenderer {
         int screenHeight = client.getWindow().getScaledHeight();
         return (int) ((double) originalY * screenHeight / BASE_HEIGHT);
     }
+
+
 }
