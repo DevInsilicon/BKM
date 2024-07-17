@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "bkm",
+  "version": "${version}",
+  "name": "BKM",
+  "description": "Made for the PVP'ers of BroKits, provides tools and a quick menu for toggling settings the middle of PVP!",
+  "authors": [
+    "ModdedKid"
+  ],
+  "contact": {
+    "repo": "Decompile me!"
+  },
+  "license": "Apache-2.0",
+  "icon": "assets/bkm/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.insilicon.bkm.client.BKMClient"
+    ],
+    "main": [
+      "dev.insilicon.bkm.BKM"
+    ]
+  },
+  "mixins": [
+    "bkm.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
