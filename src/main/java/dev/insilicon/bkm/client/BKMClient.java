@@ -1,25 +1,24 @@
 package dev.insilicon.bkm.client;
 
 import dev.insilicon.bkm.HUDRenderer.HudRenderer;
-import io.netty.buffer.Unpooled;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs;
 import net.fabricmc.fabric.api.networking.v1.PacketSender;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.client.util.Window;
+import net.minecraft.client.network.ClientPlayerEntity;
+import net.minecraft.client.option.KeyBinding;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.c2s.play.ChatMessageC2SPacket;
 import net.minecraft.util.Util;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -34,12 +33,46 @@ public class BKMClient implements ClientModInitializer {
     private static Set<UUID> playerUUIDs = new HashSet<>();
     private static final long INTERVAL_MS = 500; // 0.5 seconds
 
+    // Define key bindings
+    private static KeyBinding keyBindingUp;
+    private static KeyBinding keyBindingDown;
+    private static KeyBinding keyBindingLeft;
+    private static KeyBinding keyBindingRight;
+    private static KeyBinding keyBindingEnter;
+
     @Override
     public void onInitializeClient() {
         createModFolder();
         loadPlayerUUIDs();
 
         MinecraftClient client = MinecraftClient.getInstance();
+
+        // Register key bindings
+        keyBindingUp = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.bkm.up",
+                GLFW.GLFW_KEY_UP,
+                "category.bkm"
+        ));
+        keyBindingDown = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.bkm.down",
+                GLFW.GLFW_KEY_DOWN,
+                "category.bkm"
+        ));
+        keyBindingLeft = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.bkm.left",
+                GLFW.GLFW_KEY_LEFT,
+                "category.bkm"
+        ));
+        keyBindingRight = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.bkm.right",
+                GLFW.GLFW_KEY_RIGHT,
+                "category.bkm"
+        ));
+        keyBindingEnter = KeyBindingHelper.registerKeyBinding(new KeyBinding(
+                "key.bkm.enter",
+                GLFW.GLFW_KEY_ENTER,
+                "category.bkm"
+        ));
 
         // Events
         HudRenderCallback.EVENT.register(this::onHudRender);
@@ -57,9 +90,19 @@ public class BKMClient implements ClientModInitializer {
         hudRenderer.render(drawContext, tickDelta);
     }
 
-    public void onPlayerJoin(ClientPlayNetworkHandler clientPlayNetworkHandler, PacketSender packetSender, MinecraftClient playerJoining) {
-        UUID playerUUID = playerJoining.player.getUuid();
+    public void onPlayerJoin(ClientPlayNetworkHandler clientPlayNetworkHandler, PacketSender packetSender, MinecraftClient client) {
+        ClientPlayerEntity playerJoining = client.player;
+
+        if (playerJoining == null) {
+            System.err.println("Player information is not available yet.");
+            return;
+        }
+
+        UUID playerUUID = playerJoining.getUuid();
         boolean isFirstTime = !playerUUIDs.contains(playerUUID);
+
+        System.out.println("Player UUID: " + playerUUID);
+        System.out.println("Is first time joining: " + isFirstTime);
 
         if (isFirstTime) {
             // Add the player's UUID to the set and save it
@@ -67,11 +110,11 @@ public class BKMClient implements ClientModInitializer {
             savePlayerUUID(playerUUID);
 
             // Send welcome message to the player
-            String message = "Welcome " + playerJoining.player.getName().getString() + "! It's your first time joining!";
+            String message = "Welcome " + playerJoining.getName().getString() + "! It's your first time joining!";
             sendMessageToServer(message);
         } else {
             // Send regular welcome message
-            String message = "Welcome back " + playerJoining.player.getName().getString() + "!";
+            String message = "Welcome back " + playerJoining.getName().getString() + "!";
             sendMessageToServer(message);
         }
     }
@@ -96,32 +139,28 @@ public class BKMClient implements ClientModInitializer {
 
     private void onClientTick(MinecraftClient client) {
         if (client.currentScreen == null) {
-            if (client.options.forwardKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_W);
+            // Check for key presses using the registered key bindings
+            if (keyBindingUp.wasPressed()) {
+                handleKeyPress(GLFW.GLFW_KEY_UP);
             }
-            if (client.options.leftKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_A);
+            if (keyBindingDown.wasPressed()) {
+                handleKeyPress(GLFW.GLFW_KEY_DOWN);
             }
-            if (client.options.backKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_S);
+            if (keyBindingLeft.wasPressed()) {
+                handleKeyPress(GLFW.GLFW_KEY_LEFT);
             }
-            if (client.options.rightKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_D);
+            if (keyBindingRight.wasPressed()) {
+                handleKeyPress(GLFW.GLFW_KEY_RIGHT);
             }
-            if (client.options.jumpKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_SPACE);
-            }
-            if (client.options.sneakKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_LEFT_SHIFT);
-            }
-            if (client.options.sprintKey.isPressed()) {
-                handleKeyPress(GLFW.GLFW_KEY_LEFT_CONTROL);
+            if (keyBindingEnter.wasPressed()) {
+                handleKeyPress(GLFW.GLFW_KEY_ENTER);
             }
         }
+
+        hudRenderer.tick();
     }
 
     private void handleKeyPress(int key) {
-        MinecraftClient client = MinecraftClient.getInstance();
         String keyString = keycodeToString(key);
         hudRenderer.keyPress(keyString);
     }
@@ -154,54 +193,24 @@ public class BKMClient implements ClientModInitializer {
 
     public static String keycodeToString(int keycode) {
         switch (keycode) {
-            case GLFW.GLFW_KEY_A: return "A";
-            case GLFW.GLFW_KEY_B: return "B";
-            case GLFW.GLFW_KEY_C: return "C";
-            case GLFW.GLFW_KEY_D: return "D";
-            case GLFW.GLFW_KEY_E: return "E";
-            case GLFW.GLFW_KEY_F: return "F";
-            case GLFW.GLFW_KEY_G: return "G";
-            case GLFW.GLFW_KEY_H: return "H";
-            case GLFW.GLFW_KEY_J: return "J";
-            case GLFW.GLFW_KEY_K: return "K";
-            case GLFW.GLFW_KEY_L: return "L";
-            case GLFW.GLFW_KEY_M: return "M";
-            case GLFW.GLFW_KEY_N: return "N";
-            case GLFW.GLFW_KEY_O: return "O";
-            case GLFW.GLFW_KEY_P: return "P";
-            case GLFW.GLFW_KEY_Q: return "Q";
-            case GLFW.GLFW_KEY_I: return "I";
-            case GLFW.GLFW_KEY_R: return "R";
-            case GLFW.GLFW_KEY_S: return "S";
-            case GLFW.GLFW_KEY_T: return "T";
-            case GLFW.GLFW_KEY_U: return "U";
-            case GLFW.GLFW_KEY_V: return "V";
-            case GLFW.GLFW_KEY_W: return "W";
-            case GLFW.GLFW_KEY_X: return "X";
-            case GLFW.GLFW_KEY_Y: return "Y";
-            case GLFW.GLFW_KEY_Z: return "Z";
-            case GLFW.GLFW_KEY_0: return "0";
-            case GLFW.GLFW_KEY_1: return "1";
-            case GLFW.GLFW_KEY_2: return "2";
-            case GLFW.GLFW_KEY_3: return "3";
-            case GLFW.GLFW_KEY_4: return "4";
-            case GLFW.GLFW_KEY_5: return "5";
-            case GLFW.GLFW_KEY_6: return "6";
-            case GLFW.GLFW_KEY_7: return "7";
-            case GLFW.GLFW_KEY_8: return "8";
-            case GLFW.GLFW_KEY_9: return "9";
-            case GLFW.GLFW_KEY_SPACE: return " ";
-            case GLFW.GLFW_KEY_ENTER: return "Enter";
-            case GLFW.GLFW_KEY_TAB: return "Tab";
-            case GLFW.GLFW_KEY_BACKSPACE: return "Backspace";
-            case GLFW.GLFW_KEY_DELETE: return "Delete";
-            case GLFW.GLFW_KEY_ESCAPE: return "Escape";
-            case GLFW.GLFW_KEY_LEFT: return "Left";
-            case GLFW.GLFW_KEY_RIGHT: return "Right";
-            case GLFW.GLFW_KEY_UP: return "Up";
-            case GLFW.GLFW_KEY_DOWN: return "Down";
-            // Add more keycodes as needed
-            default: return "Unknown Key";
+            case 263:
+                return "LEFT";
+            case 264:
+                return "DOWN";
+            case 265:
+                return "UP";
+            case 262:
+                return "RIGHT";
+            case 257:
+                return "ENTER";
+
+            default:
+                return "UNKNOWN";
+
         }
+    }
+
+    public BKMClient ClientModInitializer() {
+        return this;
     }
 }
