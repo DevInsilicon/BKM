@@ -1,6 +1,8 @@
 package dev.insilicon.bkm.HUDRenderer;
 
+import dev.insilicon.bkm.HUDRenderer.addons.AutoHello;
 import dev.insilicon.bkm.HUDRenderer.addons.AutoSprint;
+import dev.insilicon.bkm.HUDRenderer.addons.NameESP;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.font.TextRenderer;
 import net.minecraft.client.gui.DrawContext;
@@ -28,6 +30,8 @@ public class HudRenderer {
     public HudRenderer() {
 
         addons.add(new AutoSprint());
+        addons.add(new NameESP());
+        addons.add(new AutoHello());
 
     }
 
@@ -35,6 +39,7 @@ public class HudRenderer {
         for (AddonBase addon : addons) {
             if (addon.getEnabled()) {
                 addon.tick();
+
             }
         }
     }
