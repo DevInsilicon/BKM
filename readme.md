@@ -1,8 +1,11 @@
 # BKM
-Made for the PVP'ers of BroKits, provides tools and a quick menu for toggling settings the middle of PVP!
+Made for the **STAFF** of BroKits, provides tools and a quick menu for toggling settings the middle of PVP!
 
 BKM is a 100% open-source project, BKM was made for brokits.minehut.gg as a fair advantage mod for all branches of PVP!
 This includes CPVP, Sword/Axe PVP, and others. Feel free to change anything by yourself provided in the repo with a fork!
+
+Normal users MAY NOT USE BKM, and will be considered an unfair advantage.
+
 
 ## Build it for yourself!
 1. Clone the repository
